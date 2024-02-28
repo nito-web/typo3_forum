@@ -26,10 +26,9 @@ namespace Mittwald\Typo3Forum\ViewHelpers\User;
  *                                                                      */
 
 use Mittwald\Typo3Forum\Domain\Model\User\FrontendUser;
-use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
-use TYPO3\CMS\Fluid\Core\ViewHelper\AbstractViewHelper;
-use TYPO3\CMS\Fluid\ViewHelpers\CObjectViewHelper;
 use Mittwald\Typo3Forum\Domain\Model\User\FrontendUserGroup;
+use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
+use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
 
 class LinkViewHelper extends AbstractViewHelper
 {
@@ -38,7 +37,7 @@ class LinkViewHelper extends AbstractViewHelper
     /**
      * @var array
      */
-    protected $settings = null;
+    protected $settings;
 
     /**
      * Initialize viewHelper and add given settings
@@ -72,7 +71,6 @@ class LinkViewHelper extends AbstractViewHelper
      */
     public function render()
     {
-
         $user = $this->arguments['user'];
         $showOnlineStatus = $this->arguments['showOnlineStatus'];
         $showOnline = $this->arguments['showOnline'];
@@ -84,15 +82,15 @@ class LinkViewHelper extends AbstractViewHelper
 
         $uriBuilder = $this->getUriBuilder();
         $uri = $uriBuilder->setTargetPageUid($this->settings['pids']['UserShow'])->setArguments([
-            'tx_typo3forum_pi1[user]' => $user->getUid(),
-            'tx_typo3forum_pi1[controller]' => 'User',
-            'tx_typo3forum_pi1[action]' => 'show'
+            'tx_typo3forum_userprofile[user]' => $user->getUid(),
+            'tx_typo3forum_userprofile[controller]' => 'User',
+            'tx_typo3forum_userprofile[action]' => 'show'
         ])->build();
 
-        $class = 'user-link';
+        $class = '';
 
         if ($this->hasArgument('class')) {
-            $class .= ' ' . $this->arguments['class'];
+            $class = $this->arguments['class'];
         }
 
         $fullUsername = htmlspecialchars($user->getUsername());
@@ -102,12 +100,13 @@ class LinkViewHelper extends AbstractViewHelper
         } else {
             $username = substr($fullUsername, 0, $limit) . '...';
         }
-        $moderatorMark = '';
-        if ($this->settings['moderatorMark']['image']) {
+        $moderatorMarkImage = $this->settings['moderatorMark']['image'] ?? null;
+        $moderatorMarkHtml = '';
+        if ($moderatorMarkImage !== null) {
+            /** @var FrontendUserGroup $group */
             foreach ($user->getUsergroup() as $group) {
-                /** @var FrontendUserGroup $group */
-                if ($group->getUserMod() === 1) {
-                    $moderatorMark = '<img src="' . $this->settings['moderatorMark']['image'] . '" title="' . $this->settings['moderatorMark']['title'] . '" />';
+                if ($group->getUserMod()) {
+                    $moderatorMarkHtml = '<img src="' . $moderatorMarkImage . '" title="' . ($this->settings['moderatorMark']['title'] ?? '') . '" />';
                     break;
                 }
             }
@@ -119,9 +118,9 @@ class LinkViewHelper extends AbstractViewHelper
             } else {
                 $onlineStatus = 'user_onlinepoint iconset-8-user-offline';
             }
-            $link = '<a href="' . $uri . '" class="' . $class . '" title="' . $fullUsername . '">' . $username . ' <i class="' . $onlineStatus . '" data-uid="' . $user->getUid() . '"></i> ' . $moderatorMark . '</a>';
+            $link = '<a href="' . $uri . '" class="' . $class . '" title="' . $fullUsername . '">' . $username . ' <i class="' . $onlineStatus . '" data-uid="' . $user->getUid() . '"></i> ' . $moderatorMarkHtml . '</a>';
         } else {
-            $link = '<a href="' . $uri . '" class="' . $class . '" title="' . $fullUsername . '">' . $username . ' ' . $moderatorMark . '</a>';
+            $link = '<a href="' . $uri . '" class="' . $class . '" title="' . $fullUsername . '">' . $username . ' ' . $moderatorMarkHtml . '</a>';
         }
 
         return $link;
@@ -136,4 +135,3 @@ class LinkViewHelper extends AbstractViewHelper
         return $this->renderingContext->getControllerContext()->getUriBuilder();
     }
 }
-
